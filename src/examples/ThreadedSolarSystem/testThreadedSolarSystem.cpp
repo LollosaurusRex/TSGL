@@ -13,11 +13,11 @@ using namespace tsgl;
 class ThreadData{
 private:
     unsigned myThreadID;
-    Drawable * myPlanet;      // the Drawable object the thread is responsible for
+    Shape * myPlanet;      // the Drawable object the thread is responsible for
     float myPitchDelta;
 
 public:
-    ThreadData(unsigned tid, Drawable * object, float pitch){
+    ThreadData(unsigned tid, Shape * object, float pitch){
         myThreadID = tid;
         myPlanet = object;
         myPitchDelta = pitch;
@@ -25,6 +25,10 @@ public:
 
     void changePitch(){
         myPlanet->changePitchBy(myPitchDelta);
+    }
+
+    void changeColor() {
+        myPlanet->setColor(ColorFloat(myThreadID / 9. + 0.1, myThreadID / 9. + 0.1, myThreadID / 9. + 0.1));
     }
 };
 
@@ -42,6 +46,7 @@ void ssFunction(Canvas& can) {
     Sphere * neptune = new Sphere(575, 0, 0, 20, 15, 0.0, 15.0, ColorFloat(.25,.65,1,1));
 
     // saturnRings->displayOutlineEdges(false);
+    saturnRings->setIsOutlined(true);
 
     mercury->setRotationPoint(0,0,0);
     venus->setRotationPoint(0,0,0);
@@ -54,7 +59,8 @@ void ssFunction(Canvas& can) {
     neptune->setRotationPoint(0,0,0);
 
     // Items in planetArray have the same index as their corresponding rotation speeds in rotationArray
-    Drawable * planetArray[] = {mercury, venus, earth, mars, jupiter, saturn, saturnRings, uranus, neptune};
+    Shape * planetArray[] = {mercury, venus, earth, mars, jupiter, saturn, saturnRings, uranus, neptune};
+
     float rotationArray[] = {4.0, 3.0/2.0, 1.0, 1.0/2.0, 1.0/12.0, 1.0/30.0, 1.0/30.0, 1.0/90.0, 1.0/180.0};
 
     can.add(sun);
@@ -75,11 +81,19 @@ void ssFunction(Canvas& can) {
             unsigned tid = omp_get_thread_num();
             unsigned numThreads = omp_get_num_threads();
 
+            // Leapfrog setup!
             for(unsigned i = tid; i < 9; i += numThreads){
+                printf("Hello for thread #%d", tid);
                 ThreadData * td = new ThreadData(tid, planetArray[i], rotationArray[i]);
                 // printf("Thread %d out of %d running planet %d\n", 
                 //         tid, numThreads - 1, i);
                 td->changePitch();
+                td->changeColor();
+
+                delete td;
+
+                // ThreadData td(tid, planetArray[i], rotationArray[i]);
+                // td.changePitch();
             }
         }
     }
